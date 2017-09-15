@@ -2,17 +2,20 @@ import { h } from "hyperapp";
 import tonal from "tonal";
 import { routeTo } from "./utils";
 import Tonics from "./Tonics";
-import Breadcrumbs from "./Breadcrumbs";
+import Badges from "./Badges";
 import { Link } from "./Router";
 
 export default ({ tonic, names = tonal.scale.names() }) => (
   <div class="Scales">
-    <Tonics route={t => ["scales", t]} />
-    <Breadcrumbs>
-      <Link to={["note", tonic]}>{tonic}</Link> &gt;
-      {tonic} scales
-    </Breadcrumbs>
-    <h1>{tonic} scales</h1>
+    <Badges packageName="scale" />
+    <h1>Scales</h1>
+    <p>
+      <Tonics route={t => ["scales", t]} />
+    </p>
+    <pre>
+      <code>import scale from "tonal-scale";</code>
+    </pre>
+    <h3>Names</h3>
     <pre>
       <code>import tonal from "tonal";</code>
       <code>
@@ -24,9 +27,7 @@ export default ({ tonic, names = tonal.scale.names() }) => (
         {names.map(name => (
           <tr>
             <td>
-              <a href={routeTo("scale", name, tonic)}>
-                {tonic} {name}
-              </a>
+              <a href={routeTo("scale", name, tonic)}>{name}</a>
             </td>
           </tr>
         ))}

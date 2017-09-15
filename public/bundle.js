@@ -313,6 +313,19 @@ function app(props) {
   }
 }
 
+var TONICS = "C C# Db D D# Eb E F F# Gb G G# Ab A A# Bb B B# Cb".split(" ");
+
+var Tonics = function (ref) {
+  var id = ref.id;
+  var route = ref.route;
+
+  return (
+  h( 'p', { id: id, class: "Tonics" },
+    TONICS.map(function (t) { return h( Link, { to: route(t) }, t); })
+  )
+);
+};
+
 'use strict';
 
 // util
@@ -1797,7 +1810,7 @@ var chroma$1 = parsed(function (p) { return (SEMI[p.step] + p.alt + 120) % 12; }
  * An alias for note. Get the name of a note in scientific notation
  * @function
  */
-function note(n) {
+function note$1(n) {
   console.warn("note.note() is deprecated. Use note.name()");
   return name(n);
 }
@@ -1814,6 +1827,12 @@ function note(n) {
  * note.oct('blah') // => null
  */
 var oct$1 = parsed(function (p) { return p.oct; });
+
+/**
+ * Get the note in a given octave
+ * @function
+ */
+var inOct = function (oct, note) { return pc$1(note) + oct; };
 
 /**
  * Get the note step: a number equivalent of the note letter. 0 means C and
@@ -1914,15 +1933,16 @@ var name = parsed(function (p) { return build$2(p); });
 var pc$1 = parsed(function (p) { return letter$1(p.step) + acc$1(p.alt); });
 
 
-var note$1 = Object.freeze({
+var note$2 = Object.freeze({
 	split: split$1,
 	parse: parse$2,
 	midi: midi$1,
 	fromMidi: fromMidi,
 	freq: freq$1,
 	chroma: chroma$1,
-	note: note,
+	note: note$1,
 	oct: oct$1,
+	inOct: inOct,
 	step: step$1,
 	pcFifths: pcFifths,
 	alt: alt$1,
@@ -2473,10 +2493,10 @@ var SHARPS$1 = "C C# D D# E F F# G G# A A# B".split(" ");
  * // it rounds to nearest note
  * midi.note(61.7) // => 'D4'
  */
-function note$2(num, sharps) {
+function note$3(num, sharps) {
   if (num === true || num === false)
     { return function(m) {
-      return note$2(m, num);
+      return note$3(m, num);
     }; }
   num = Math.round(num);
   var pcs = sharps === true ? SHARPS$1 : FLATS$1;
@@ -2488,7 +2508,7 @@ function note$2(num, sharps) {
 
 var midi$2 = Object.freeze({
 	toMidi: toMidi$1,
-	note: note$2
+	note: note$3
 });
 
 /**
@@ -2598,8 +2618,8 @@ var toMidi$2 = eqTempFreqToMidi(440, 2);
  * @example
  * freq.note(440) // => 'A4'
  */
-function note$3(freq, useSharps) {
-  return note$2(toMidi$2(freq), useSharps);
+function note$4(freq, useSharps) {
+  return note$3(toMidi$2(freq), useSharps);
 }
 
 /**
@@ -2624,7 +2644,7 @@ var freq$3 = Object.freeze({
 	toFreq: toFreq,
 	eqTempFreqToMidi: eqTempFreqToMidi,
 	toMidi: toMidi$2,
-	note: note$3,
+	note: note$4,
 	cents: cents
 });
 
@@ -2829,11 +2849,11 @@ function isSuperset(test, set) {
  * pcset.includes('c d e', 'C4') // =A true
  * pcset.includes('c d e', 'C#4') // =A false
  */
-function includes(set, note$$1) {
-  if (arguments.length > 1) { return includes(set)(note$$1); }
+function includes(set, note) {
+  if (arguments.length > 1) { return includes(set)(note); }
   set = chroma$3(set);
-  return function(note$$1) {
-    return set[pitchChr(note$$1)] === "1";
+  return function(note) {
+    return set[pitchChr(note)] === "1";
   };
 }
 
@@ -2953,7 +2973,7 @@ function numeric(list) {
  * tonal.chromatic('C2 C3', true) // => [ 'C2', 'C#2', 'D2', 'D#2', 'E2', 'F2', 'F#2', 'G2', 'G#2', 'A2', 'A#2', 'B2', 'C3' ]
  */
 function chromatic(list, sharps) {
-  return map(note$2(sharps === true), numeric(list));
+  return map(note$3(sharps === true), numeric(list));
 }
 
 /**
@@ -4736,7 +4756,7 @@ var assign = Object.assign;
 var tonal = assign({}, array, transpose$1, harmonizer, distance);
 tonal.pitch = pitch$1;
 tonal.notation = notation;
-tonal.note = note$1;
+tonal.note = note$2;
 tonal.ivl = interval$1;
 tonal.midi = midi$2;
 tonal.freq = freq$3;
@@ -4758,16 +4778,49 @@ assign(tonal.chord, chord$1);
 
 if (typeof window !== "undefined") { window.Tonal = tonal; }
 
+var note = tonal.note;
+
 var OCTS = [1, 2, 3, 4, 5, 6];
+
+var toStr = function (o) { return (o === null ? "null" : o); };
 
 var Note = function (ref) {
   var tonic = ref.tonic;
 
+  var pc = note.pc(tonic);
+  var freq = note.freq(tonic);
+  var midi = note.midi(tonic);
   return (
-  h( 'div', { class: "Note" },
-    h( 'h4', null, "note" ),
-    h( 'h1', null, tonic ),
-    h( Link, { to: ["scales", tonic] }, tonic, " scales"), " | ", h( Link, { to: ["chords", tonic] }, tonic, " chords"),
+    h( 'div', { class: "Note" },
+      h( 'h4', null, "note" ),
+      h( 'h1', null, tonic ),
+      h( 'pre', null,
+        h( 'code', null, "note.freq(\"", tonic, "\") // => ", toStr(freq)
+        ),
+        freq && h( 'code', null, "note.fromFreq(", freq.toFixed(1), ") // =>" ),
+        h( 'code', null, "note.midi(\"", tonic, "\") // => ", toStr(midi)
+        ),
+        midi && (
+          h( 'code', null, "note.fromMidi(", midi, ") // => \"", tonic, "\"" )
+        )
+      ),
+      h( 'p', null,
+        h( Link, { to: ["note", pc] }, pc), " | ", h( Link, { to: ["scales", tonic] }, "scales"), " | ", h( Link, { to: ["chords", tonic] }, "chords")
+      ),
+      h( 'h3', null, "Octaves" ),
+      h( 'pre', null,
+        h( 'code', null, "note.inOct(4, \"", tonic, "\") // => ", toStr(note.inOct(4, tonic))
+        )
+      ),
+      h( Table, { pc: note.pc(tonic) })
+    )
+  );
+};
+
+function Table(ref) {
+  var pc = ref.pc;
+
+  return (
     h( 'table', null,
       h( 'thead', null,
         h( 'tr', null,
@@ -4779,16 +4832,17 @@ var Note = function (ref) {
       h( 'tbody', null,
         OCTS.map(function (o) { return (
           h( 'tr', null,
-            h( 'td', null, tonic + o ),
-            h( 'td', null, tonal.note.midi(tonic + o) ),
-            h( 'td', null, tonal.note.freq(tonic + o).toFixed(3) )
+            h( 'td', null,
+              h( Link, { to: ["note", pc + o] }, pc + o)
+            ),
+            h( 'td', null, note.midi(pc + o) ),
+            h( 'td', null, note.freq(pc + o).toFixed(3) )
           )
         ); })
       )
     )
-  )
-);
-};
+  );
+}
 
 var routeTo = function () {
     var paths = [], len = arguments.length;
@@ -4797,24 +4851,21 @@ var routeTo = function () {
     return "#/" + paths.map(function (n) { return n.replace(/ /g, "_"); }).join("/");
 };
 
-var TONICS = "C C# Db D D# Eb E F F# Gb G G# Ab A A# Bb B B# Cb".split(" ");
+var npmUrl = function (name) { return ("https://www.npmjs.com/package/tonal-" + name + "/"); };
 
-var Tonics = function (ref) {
-  var id = ref.id;
-  var route = ref.route;
+var nodeiCo = function (name) { return ("https://nodei.co/npm/tonal-" + name + ".png?mini=true"); };
+
+var Badges = function (ref) {
+  var packageName = ref.packageName;
 
   return (
-  h( 'span', { id: id, class: "Tonics" },
-    TONICS.map(function (t) { return h( Link, { to: route(t) }, t); })
+  h( 'p', { class: "Badges" },
+    h( 'a', { href: npmUrl(packageName) },
+      h( 'img', { src: nodeiCo(packageName) })
+    )
   )
 );
 };
-
-var Breadcrumbs = function (ref, children) { return (
-  h( 'div', { class: "Breadcrumbs" },
-    h( Link, { to: [] }, "tonal"), " > ", children
-  )
-); };
 
 var Scales = function (ref) {
   var tonic = ref.tonic;
@@ -4822,10 +4873,15 @@ var Scales = function (ref) {
 
   return (
   h( 'div', { class: "Scales" },
-    h( Tonics, { route: function (t) { return ["scales", t]; } }),
-    h( Breadcrumbs, null,
-      h( Link, { to: ["note", tonic] }, tonic), " > ", tonic, " scales" ),
-    h( 'h1', null, tonic, " scales" ),
+    h( Badges, { packageName: "scale" }),
+    h( 'h1', null, "Scales" ),
+    h( 'p', null,
+      h( Tonics, { route: function (t) { return ["scales", t]; } })
+    ),
+    h( 'pre', null,
+      h( 'code', null, "import scale from \"tonal-scale\";" )
+    ),
+    h( 'h3', null, "Names" ),
     h( 'pre', null,
       h( 'code', null, "import tonal from \"tonal\";" ),
       h( 'code', null, "tonal.scale.names(); // => [\"", names[0], "\", \"", names[1], "\", ...]" )
@@ -4835,9 +4891,7 @@ var Scales = function (ref) {
         names.map(function (name) { return (
           h( 'tr', null,
             h( 'td', null,
-              h( 'a', { href: routeTo("scale", name, tonic) },
-                tonic, " ", name
-              )
+              h( 'a', { href: routeTo("scale", name, tonic) }, name)
             )
           )
         ); })
@@ -4855,19 +4909,18 @@ var Scale = function (ref) {
 
   return (
   h( 'div', { class: "Scale" },
-    h( Tonics, { route: function (t) { return ["scale", name, t]; } }),
-    h( Breadcrumbs, null ),
     h( 'h4', null, "scale" ),
     h( 'h1', null,
       tonic, " ", name
     ),
-    h( 'div', { class: "properties" },
-      h( 'label', null, "Scale notes:" ),
-      h( 'pre', null,
-        h( 'code', null, "tonal.scale.notes(\"", tonic + " " + name, "\"); // => ", toArray(tonal.scale.get(name, tonic))
-        )
-      ),
-      h( 'br', null )
+    h( 'p', null,
+      h( Tonics, { route: function (t) { return ["scale", name, t]; } })
+    ),
+
+    h( 'h3', null, "Scale notes" ),
+    h( 'pre', null,
+      h( 'code', null, "tonal.scale.notes(\"", tonic + " " + name, "\"); // => ", toArray(tonal.scale.get(name, tonic))
+      )
     )
   )
 );
@@ -4908,7 +4961,6 @@ var Chord = function (ref) {
 var Welcome = function (ref) { return (
   h( 'div', { class: "Welcome" },
     h( 'h1', null, "tonal" ),
-    h( Tonics, { route: function (t) { return ["note", t]; } }),
     h( 'pre', null,
       h( 'code', null, "import tonal from \"tonal\"; " ),
       h( 'code', null, "tonal.note.freq(\"A4\") // => 440" ),
@@ -4917,9 +4969,13 @@ var Welcome = function (ref) { return (
     h( 'h3', null,
       h( Link, { to: ["notes"] }, "Notes")
     ),
+    h( Tonics, { route: function (t) { return ["note", t]; } }),
     h( 'pre', null,
       h( 'code', null, "tonal.note.freq(\"A4\") // => 440" ),
       h( 'code', null, "tonal.note.midi(\"A4\") // => 69" )
+    ),
+    h( 'h3', null,
+      h( Link, { to: ["intervals"] }, "Intervals")
     )
   )
 ); };
@@ -4957,7 +5013,14 @@ app({
   state: {
     route: []
   },
-  view: function (state) { return h( Router, { route: state.route }); },
+  view: function (state) { return (
+    h( 'div', null,
+      h( 'p', { id: "top" },
+        h( Link, { to: ["tonal"] }, "tonal"), " | ", h( Link, { to: ["notes"] }, "notes"), " | ", h( Link, { to: ["intervals"] }, "intervals"), " | ", h( Link, { to: ["scales"] }, "scales"), " | ", h( Link, { to: ["chords"] }, "chords")
+      ),
+      h( Router, { route: state.route })
+    )
+  ); },
   actions: {
     route: function (state, actions, data) {
       return { route: decode(data) };

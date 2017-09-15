@@ -1,15 +1,55 @@
 import { h } from "hyperapp";
 import { Link } from "./Router";
+import Tonics from "./Tonics";
+import Breadcrumbs from "./Breadcrumbs";
 import tonal from "tonal";
+
+const note = tonal.note;
 
 const OCTS = [1, 2, 3, 4, 5, 6];
 
-export default ({ tonic }) => (
-  <div class="Note">
-    <h4>note</h4>
-    <h1>{tonic}</h1>
-    <Link to={["scales", tonic]}>{tonic} scales</Link> |
-    <Link to={["chords", tonic]}>{tonic} chords</Link>
+const toStr = o => (o === null ? "null" : o);
+
+export default ({ tonic }) => {
+  const pc = note.pc(tonic);
+  const freq = note.freq(tonic);
+  const midi = note.midi(tonic);
+  return (
+    <div class="Note">
+      <h4>note</h4>
+      <h1>{tonic}</h1>
+      <pre>
+        <code>
+          note.freq("{tonic}") // => {toStr(freq)}
+        </code>
+        {freq && <code>note.fromFreq({freq.toFixed(1)}) // =></code>}
+        <code>
+          note.midi("{tonic}") // => {toStr(midi)}
+        </code>
+        {midi && (
+          <code>
+            note.fromMidi({midi}) // => "{tonic}"
+          </code>
+        )}
+      </pre>
+      <p>
+        <Link to={["note", pc]}>{pc}</Link> |
+        <Link to={["scales", tonic]}>scales</Link> |
+        <Link to={["chords", tonic]}>chords</Link>
+      </p>
+      <h3>Octaves</h3>
+      <pre>
+        <code>
+          note.inOct(4, "{tonic}") // => {toStr(note.inOct(4, tonic))}
+        </code>
+      </pre>
+      <Table pc={note.pc(tonic)} />
+    </div>
+  );
+};
+
+function Table({ pc }) {
+  return (
     <table>
       <thead>
         <tr>
@@ -21,12 +61,14 @@ export default ({ tonic }) => (
       <tbody>
         {OCTS.map(o => (
           <tr>
-            <td>{tonic + o}</td>
-            <td>{tonal.note.midi(tonic + o)}</td>
-            <td>{tonal.note.freq(tonic + o).toFixed(3)}</td>
+            <td>
+              <Link to={["note", pc + o]}>{pc + o}</Link>
+            </td>
+            <td>{note.midi(pc + o)}</td>
+            <td>{note.freq(pc + o).toFixed(3)}</td>
           </tr>
         ))}
       </tbody>
     </table>
-  </div>
-);
+  );
+}
