@@ -4919,6 +4919,39 @@ function Table(ref) {
   );
 }
 
+var CircleSet = function (ref) {
+  var size = ref.size; if ( size === void 0 ) size = 80;
+  var offset = ref.offset; if ( offset === void 0 ) offset = 0;
+  var chroma = ref.chroma; if ( chroma === void 0 ) chroma = "0";
+  var type = ref.type; if ( type === void 0 ) type = "set";
+
+  var center = size / 2;
+  var strokeWidth = size * 0.1;
+  var radius = size / 2 - strokeWidth / 2;
+  // const circumference = 2 * Math.PI * radius;
+  var radians = 2 * Math.PI / chroma.length;
+  var points = chroma.split("").reduce(function (points, value, i) {
+    if (value === "1") {
+      points.push(center + radius * Math.cos((offset + i - 3) * radians));
+      points.push(center + radius * Math.sin((offset + i - 3) * radians));
+    }
+    return points;
+  }, []);
+
+  var classNames = "Circle " + type;
+
+  return (
+    h( 'svg', {
+      class: classNames, width: size, height: size, viewBox: ("0 0 " + size + " " + size) },
+      h( 'circle', { class: "background", cx: center, cy: center, r: radius }),
+      h( 'circle', { class: "tonic", cx: points[0], cy: points[1], r: 2 }),
+      h( 'polygon', { class: "overlay", points: points.join(" ") })
+    )
+  );
+};
+
+var setChroma = function (type, name) { return tonal.pcset.chroma(tonal[type].intervals(name)); };
+
 var PitchSetNames = function (ref) {
   var tonic = ref.tonic;
   var names = ref.names;
@@ -4944,12 +4977,16 @@ var PitchSetNames = function (ref) {
       h( 'table', null,
         h( 'thead', null,
           h( 'tr', null,
+            h( 'td', null, " " ),
             h( 'td', null, title, " name" )
           )
         ),
         h( 'tbody', null,
           names.map(function (name) { return (
             h( 'tr', null,
+              h( 'td', null,
+                h( CircleSet, { size: 40, chroma: setChroma(type, name) })
+              ),
               h( 'td', null,
                 h( Link, { to: [type, name, tonic] }, name)
               )
@@ -4979,6 +5016,27 @@ var Chords = function (ref) {
 );
 };
 
+var BASE_URL = "https://github.com/danigb/tonal/tree/master/packages/tonal/";
+var apiUrl$1 = function (modName, fnName) { return BASE_URL + "note#module_" + modName + "." + fnName; };
+
+var API = function (ref) {
+  var module = ref.module;
+
+  return [
+  h( 'h3', null, "API" ),
+  h( Install, { packageName: "tonal-" + module }),
+  h( 'p', null,
+    Object.keys(tonal[module])
+      .sort()
+      .map(function (n) { return (
+        h( 'a', { class: "api", href: apiUrl$1(module, n), target: "_blank" },
+          n
+        )
+      ); })
+  )
+];
+};
+
 var toArray = function (arr) { return "[" + arr.map(function (t) { return ("\"" + t + "\""); }).join(", ") + "]"; };
 var fullName = function (tonic, name) { return (tonic ? tonic + " " + name : name); };
 
@@ -4988,28 +5046,33 @@ var Scale = function (ref) {
   var tonic = ref.tonic;
   var name = ref.name;
 
+  var intervals = tonal.scale.intervals(name);
+  var offset = tonal.note.chroma(tonic) || 0;
   return (
-  h( 'div', { class: "Scale" },
-    h( 'h4', null, "scale" ),
-    h( 'h1', null,
-      tonic, " ", name
-    ),
-    h( 'p', null,
-      h( Tonics, { route: function (t) { return ["scale", name, t]; } })
-    ),
+    h( 'div', { class: "Scale" },
+      h( 'h4', null, "scale" ),
+      h( 'h1', null,
+        tonic, " ", name
+      ),
+      h( 'p', null,
+        h( Tonics, { route: function (t) { return ["scale", name, t]; } })
+      ),
 
-    h( 'h3', null, "Scale notes" ),
-    h( Code, {
-      lines: [
-        ("tonal.scale.notes(\"" + (fullName(tonic, name)) + "\"); // => " + (toArray(
-          scale$3.notes(name, tonic)
-        ))),
-        ("tonal.scale.intervals(\"" + (fullName(tonic, name)) + "\"); // => " + (toArray(
-          scale$3.intervals(name, tonic)
-        )))
-      ] })
-  )
-);
+      h( CircleSet, {
+        size: 160, offset: offset, chroma: tonal.pcset.chroma(intervals) }),
+
+      h( API, { module: "scale" }),
+
+      h( Code, {
+        lines: [
+          ("tonal.scale.exists(\"" + name + "\"); // => " + (scale$3.exists(name))),
+          ("tonal.scale.notes(\"" + (fullName(tonic, name)) + "\"); // => " + (toArray(
+            scale$3.notes(name, tonic)
+          ))),
+          ("tonal.scale.intervals(\"" + name + "\"); // => " + (toArray(intervals)))
+        ] })
+    )
+  );
 };
 
 var Chord = function (ref) {

@@ -25,3 +25,19 @@ a.api {
 .Tonics a {
   margin-right: 0.5rem;
 }
+
+.Circle .background {
+  fill: #ede3e3;
+}
+.Circle .tonic {
+  fill: #9b4dca;
+}
+
+.Circle polygon {
+  fill: #c99ae7;
+  stroke: #9b4dca;
+}
+.NOCircle polygon {
+  fill: #65c3de;
+  stroke: #4a8ea2;
+}

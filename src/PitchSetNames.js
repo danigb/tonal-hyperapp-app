@@ -1,9 +1,13 @@
 import { h } from "hyperapp";
 import tonal from "tonal";
 import Tonics from "./Tonics";
+import CircleSet from "./CircleSet";
 import Code from "./Code";
 import { Install } from "./Badges";
 import { Link } from "./Router";
+
+const setChroma = (type, name) =>
+  tonal.pcset.chroma(tonal[type].intervals(name));
 
 const PitchSetNames = ({ tonic, names, title, type, packageName }) => {
   console.log("joder", names);
@@ -25,12 +29,16 @@ const PitchSetNames = ({ tonic, names, title, type, packageName }) => {
       <table>
         <thead>
           <tr>
+            <td>&nbsp;</td>
             <td>{title} name</td>
           </tr>
         </thead>
         <tbody>
           {names.map(name => (
             <tr>
+              <td>
+                <CircleSet size={40} chroma={setChroma(type, name)} />
+              </td>
               <td>
                 <Link to={[type, name, tonic]}>{name}</Link>
               </td>
