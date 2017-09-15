@@ -1,7 +1,6 @@
 import { h } from "hyperapp";
 import { Link } from "./Router";
 import Tonics from "./Tonics";
-import Breadcrumbs from "./Breadcrumbs";
 import tonal from "tonal";
 
 const note = tonal.note;
@@ -18,6 +17,21 @@ export default ({ tonic }) => {
     <div class="Note">
       <h4>note</h4>
       <h1>{tonic}</h1>
+      <Tonics route={t => ["note", t]} />
+      <h3>Properties</h3>
+      <pre>
+        <code>
+          note.parse("{tonic}") // =>
+          {JSON.stringify(note.parse(tonic), null, 2)}
+        </code>
+        <code>
+          note.alt("{tonic}") // => {note.alt(tonic)}
+        </code>
+        <code>
+          note.oct("{tonic}") // => {toStr(note.oct(tonic))}
+        </code>
+      </pre>
+      <h3>Midi and frequency</h3>
       <pre>
         <code>
           note.freq("{tonic}") // => {toStr(freq)}

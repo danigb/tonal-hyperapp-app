@@ -1,10 +1,12 @@
 import { h } from "hyperapp";
 import Tonics from "./Tonics";
 import { Link } from "./Router";
+import { Install } from "./Badges";
 
 export default ({}) => (
   <div class="Welcome">
     <h1>tonal</h1>
+    <Install packageName="tonal" />
     <pre>
       <code>import tonal from "tonal"; </code>
       <code>tonal.note.freq("A4") // => 440</code>

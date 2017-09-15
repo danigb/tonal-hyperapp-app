@@ -4,7 +4,7 @@ import Scales from "./Scales";
 import Scale from "./Scale";
 import Chords from "./Chords";
 import Chord from "./Chord";
-import Welcome from "./Welcome";
+import Tonal from "./Tonal";
 
 export const encode = paths =>
   "#/" + paths.map(n => n.replace(/ /g, "_")).join("/");
@@ -26,6 +26,6 @@ export default ({ route }) => {
     case "chord":
       return <Chord name={route[1]} tonic={route[2]} />;
     default:
-      return <Welcome />;
+      return <Tonal />;
   }
 };

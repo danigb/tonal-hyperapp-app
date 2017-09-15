@@ -4794,6 +4794,17 @@ var Note = function (ref) {
     h( 'div', { class: "Note" },
       h( 'h4', null, "note" ),
       h( 'h1', null, tonic ),
+      h( Tonics, { route: function (t) { return ["note", t]; } }),
+      h( 'h3', null, "Properties" ),
+      h( 'pre', null,
+        h( 'code', null, "note.parse(\"", tonic, "\") // => ", JSON.stringify(note.parse(tonic), null, 2)
+        ),
+        h( 'code', null, "note.alt(\"", tonic, "\") // => ", note.alt(tonic)
+        ),
+        h( 'code', null, "note.oct(\"", tonic, "\") // => ", toStr(note.oct(tonic))
+        )
+      ),
+      h( 'h3', null, "Midi and frequency" ),
       h( 'pre', null,
         h( 'code', null, "note.freq(\"", tonic, "\") // => ", toStr(freq)
         ),
@@ -4851,18 +4862,17 @@ var routeTo = function () {
     return "#/" + paths.map(function (n) { return n.replace(/ /g, "_"); }).join("/");
 };
 
-var npmUrl = function (name) { return ("https://www.npmjs.com/package/tonal-" + name + "/"); };
+var npmUrl = function (name) { return ("https://www.npmjs.com/package/" + name + "/"); };
 
-var nodeiCo = function (name) { return ("https://nodei.co/npm/tonal-" + name + ".png?mini=true"); };
+var nodeiCo = function (name) { return ("https://nodei.co/npm/" + name + ".png?mini=true"); };
 
-var Badges = function (ref) {
+var Install = function (ref) {
+  var name = ref.name;
   var packageName = ref.packageName;
 
   return (
-  h( 'p', { class: "Badges" },
-    h( 'a', { href: npmUrl(packageName) },
-      h( 'img', { src: nodeiCo(packageName) })
-    )
+  h( 'a', { href: npmUrl(packageName || "tonal-" + name) },
+    h( 'img', { src: nodeiCo(packageName || "tonal-" + name) })
   )
 );
 };
@@ -4873,11 +4883,8 @@ var Scales = function (ref) {
 
   return (
   h( 'div', { class: "Scales" },
-    h( Badges, { packageName: "scale" }),
     h( 'h1', null, "Scales" ),
-    h( 'p', null,
-      h( Tonics, { route: function (t) { return ["scales", t]; } })
-    ),
+    h( Install, { packageName: "tonal-scale" }),
     h( 'pre', null,
       h( 'code', null, "import scale from \"tonal-scale\";" )
     ),
@@ -4958,9 +4965,10 @@ var Chord = function (ref) {
 );
 };
 
-var Welcome = function (ref) { return (
+var Tonal = function (ref) { return (
   h( 'div', { class: "Welcome" },
     h( 'h1', null, "tonal" ),
+    h( Install, { packageName: "tonal" }),
     h( 'pre', null,
       h( 'code', null, "import tonal from \"tonal\"; " ),
       h( 'code', null, "tonal.note.freq(\"A4\") // => 440" ),
@@ -5005,9 +5013,11 @@ var Router = function (ref) {
     case "chord":
       return h( Chord, { name: route[1], tonic: route[2] });
     default:
-      return h( Welcome, null );
+      return h( Tonal, null );
   }
 };
+
+console.log("Tonal", tonal);
 
 app({
   state: {
