@@ -18,14 +18,10 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "watch": "rollup -c -w"
+    "watch": "rollup -c -w",
+    "deploy": "gh-pages -d ."
   },
-  "keywords": [
-    "tonal",
-    "app",
-    "music",
-    "theory"
-  ],
+  "keywords": ["tonal", "app", "music", "theory"],
   "author": "danigb",
   "license": "MIT"
 }

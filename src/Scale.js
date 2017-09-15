@@ -1,9 +1,13 @@
 import { h } from "hyperapp";
 import tonal from "tonal";
 import Tonics from "./Tonics";
+import Code from "./Code";
 import { Link } from "./Router";
 
 const toArray = arr => "[" + arr.map(t => `"${t}"`).join(", ") + "]";
+const fullName = (tonic, name) => (tonic ? tonic + " " + name : name);
+
+const scale = tonal.scale;
 
 export default ({ tonic, name }) => (
   <div class="Scale">
@@ -16,11 +20,15 @@ export default ({ tonic, name }) => (
     </p>
 
     <h3>Scale notes</h3>
-    <pre>
-      <code>
-        tonal.scale.notes("{tonic + " " + name}"); // =>
-        {toArray(tonal.scale.get(name, tonic))}
-      </code>
-    </pre>
+    <Code
+      lines={[
+        `tonal.scale.notes("${fullName(tonic, name)}"); // => ${toArray(
+          scale.notes(name, tonic)
+        )}`,
+        `tonal.scale.intervals("${fullName(tonic, name)}"); // => ${toArray(
+          scale.intervals(name, tonic)
+        )}`
+      ]}
+    />
   </div>
 );

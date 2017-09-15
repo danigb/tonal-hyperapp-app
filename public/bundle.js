@@ -313,15 +313,45 @@ function app(props) {
   }
 }
 
+var npmUrl = function (name) { return ("https://www.npmjs.com/package/" + name + "/"); };
+
+var nodeiCo = function (name) { return ("https://nodei.co/npm/" + name + ".png?mini=true"); };
+
+var Install = function (ref) {
+  var name = ref.name;
+  var packageName = ref.packageName;
+
+  return (
+  h( 'a', { href: npmUrl(packageName || "tonal-" + name) },
+    h( 'img', { src: nodeiCo(packageName || "tonal-" + name) })
+  )
+);
+};
+
 var TONICS = "C C# Db D D# Eb E F F# Gb G G# Ab A A# Bb B B# Cb".split(" ");
 
 var Tonics = function (ref) {
   var id = ref.id;
+  var label = ref.label;
   var route = ref.route;
+  var oct = ref.oct;
+  var tonics = ref.tonics; if ( tonics === void 0 ) tonics = TONICS;
+
+  var o = oct !== 0 && !oct ? "" : oct;
+  return (
+    h( 'p', { id: id, class: "Tonics" },
+      label && h( 'label', null, label ),
+      tonics.map(function (t) { return h( Link, { to: route(t + o) }, t + o); })
+    )
+  );
+};
+
+var Code = function (ref) {
+  var lines = ref.lines;
 
   return (
-  h( 'p', { id: id, class: "Tonics" },
-    TONICS.map(function (t) { return h( Link, { to: route(t) }, t); })
+  h( 'pre', null,
+    h( 'code', null, lines.join("\n") )
   )
 );
 };
@@ -1684,7 +1714,7 @@ var harmonizer = Object.freeze({
  *
  * ```js
  * import * as note from 'tonal-note'
- * // or var note = require('tonal-note')
+ * // or const note = require('tonal-note')
  * note.name('bb2') // => 'Bb2'
  * note.chroma('bb2') // => 10
  * note.midi('a4') // => 69
@@ -1713,13 +1743,13 @@ function split$1(str) {
     letter: m[1].toUpperCase(),
     acc: m[2].replace(/x/g, "##"),
     oct: m[3],
-    mod: m[4]
+    type: m[4]
   };
 }
 
 function parseNote$1(str) {
   var p = split$1(str);
-  return p && p.mod === ""
+  return p && p.type === ""
     ? {
         step: (p.letter.charCodeAt(0) + 3) % 7,
         alt: p.acc[0] === "b" ? -p.acc.length : p.acc.length,
@@ -1767,11 +1797,11 @@ var SHARPS = "C C# D D# E F F# G G# A A# B".split(" ");
  * @param [boolean] useSharps - (Optional) set to true to use sharps instead of flats
  * @return {string} the note name
  * @example
- * var midi = require('tonal-midi')
- * midi.note(61) // => 'Db4'
- * midi.note(61, true) // => 'C#4'
+ * const note = require('tonal-note')
+ * note.fromMidi(61) // => 'Db4'
+ * note.fromMidi(61, true) // => 'C#4'
  * // it rounds to nearest note
- * midi.note(61.7) // => 'D4'
+ * note.fromMidi(61.7) // => 'D4'
  */
 function fromMidi(num, sharps) {
   num = Math.round(num);
@@ -1792,6 +1822,24 @@ function fromMidi(num, sharps) {
  */
 var freq$1 = function (str, m) { return (m = midi$1(str)) !== null ? Math.pow(2, (m - 69) / 12) * 440 : null; };
 
+var L2 = Math.log(2);
+var L440 = Math.log(440);
+/**
+ * Get the midi number from a frequency in hertz. The midi number can
+ * contain decimals (with two digits precission)
+ * 
+ * @param {Number} frequency
+ * @return {Number}
+ * @example
+ * note.freqToMidi(220)); //=> 57;
+ * note.freqToMidi(261.62)); //=> 60;
+ * note.freqToMidi(261)); //=> 59.96;
+ */
+var freqToMidi = function (freq) {
+  var v = 12 * (Math.log(freq) - L440) / L2 + 69;
+  return Math.round(v * 100) / 100;
+};
+
 /**
  * Return the chroma of a note. The chroma is the numeric equivalent to the
  * pitch class, where 0 is C, 1 is C# or Db, 2 is D... 11 is B
@@ -1799,7 +1847,7 @@ var freq$1 = function (str, m) { return (m = midi$1(str)) !== null ? Math.pow(2,
  * @param {string} note - the note name
  * @return {Integer} the chroma number
  * @example
- * var note = require('tonal-note')
+ * const note = require('tonal-note')
  * note.chroma('Cb') // => 11
  * ['C', 'D', 'E', 'F'].map(note.chroma) // => [0, 2, 4, 5]
  */
@@ -1914,7 +1962,7 @@ var build$2 = function (p) { return letter$1(p.step) + acc$1(p.alt) + numToStr(p
  * @return {string}
  *
  * @example
- * var note = require('tonal-note')
+ * const note = require('tonal-note')
  * note.name('cb2') // => 'Cb2'
  * ['c', 'db3', '2', 'g+', 'gx4'].map(note.name) // => ['C', 'Db3', null, null, 'G##4']
  */
@@ -1939,6 +1987,7 @@ var note$2 = Object.freeze({
 	midi: midi$1,
 	fromMidi: fromMidi,
 	freq: freq$1,
+	freqToMidi: freqToMidi,
 	chroma: chroma$1,
 	note: note$1,
 	oct: oct$1,
@@ -4026,24 +4075,11 @@ var names = scale$2.keys;
  * scale.notes('Ab bebop') // => [ 'Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'Gb', 'G' ]
  * scale.notes('C4 D6 E2 c7 a2 b5 g2 g4 f') // => ['C', 'D', 'E', 'F', 'G', 'A', 'B']
  */
-function notes$1(name$$1) {
+function notes$1(name$$1, tonic) {
   var parsed = parseName(name$$1);
-  if (parsed.tonic) { console.log(parsed.tonic, pc$1(parsed.tonic)); }
-  if (parsed.tonic) {
-    var ivls = scale$2(parsed.type);
-    return ivls ? ivls.map(transpose$2(pc$1(parsed.tonic))) : [];
-  }
-  var notes = scale$2.tonic ? get(scale$2.type, pc$1(scale$2.tonic)) : null;
-  return (
-    notes ||
-    compact(
-      map(pc$1, name$$1).map(function(n, i, arr) {
-        // check for duplicates
-        // TODO: sort but preserving the root
-        return arr.indexOf(n) < i ? null : n;
-      })
-    )
-  );
+  tonic = name(tonic) || parsed.tonic;
+  var ivls = scale$2(parsed.type);
+  return tonic && ivls ? ivls.map(transpose$2(pc$1(tonic))) : [];
 }
 
 /**
@@ -4783,47 +4819,75 @@ var note = tonal.note;
 var OCTS = [1, 2, 3, 4, 5, 6];
 
 var toStr = function (o) { return (o === null ? "null" : o); };
+var toFixed = function (dec, num) { return typeof num === "number" ? num.toFixed(dec) : "null"; };
+var toJson = function (o) { return JSON.stringify(o, null, 2); };
+var toName = function (n) { return (n ? '"' + n + '"' : "null"); };
+
+var apiUrl = function (name) { return "https://github.com/danigb/tonal/tree/master/packages/tonal/note#module_note." +
+  name; };
 
 var Note = function (ref) {
   var tonic = ref.tonic;
 
+  tonic = note.note(tonic);
+  console.log(tonic);
   var pc = note.pc(tonic);
   var freq = note.freq(tonic);
   var midi = note.midi(tonic);
   return (
     h( 'div', { class: "Note" },
-      h( 'h4', null, "note" ),
-      h( 'h1', null, tonic ),
-      h( Tonics, { route: function (t) { return ["note", t]; } }),
-      h( 'h3', null, "Properties" ),
-      h( 'pre', null,
-        h( 'code', null, "note.parse(\"", tonic, "\") // => ", JSON.stringify(note.parse(tonic), null, 2)
-        ),
-        h( 'code', null, "note.alt(\"", tonic, "\") // => ", note.alt(tonic)
-        ),
-        h( 'code', null, "note.oct(\"", tonic, "\") // => ", toStr(note.oct(tonic))
+      pc && h( 'h4', null, "note" ),
+      pc ? h( 'h1', { class: "note" }, tonic) : h( 'h1', null, "Notes" ),
+      freq && (
+        h( 'div', { class: "properties" },
+          h( 'h3', null, "freq: ", freq.toFixed(2), "Hz ", h( 'br', null ), "midi: ", midi
+          )
         )
       ),
-      h( 'h3', null, "Midi and frequency" ),
-      h( 'pre', null,
-        h( 'code', null, "note.freq(\"", tonic, "\") // => ", toStr(freq)
-        ),
-        freq && h( 'code', null, "note.fromFreq(", freq.toFixed(1), ") // =>" ),
-        h( 'code', null, "note.midi(\"", tonic, "\") // => ", toStr(midi)
-        ),
-        midi && (
-          h( 'code', null, "note.fromMidi(", midi, ") // => \"", tonic, "\"" )
-        )
+      h( Tonics, {
+        label: "Choose note:", oct: note.oct(tonic), route: function (t) { return ["note", t]; } }),
+      pc && (
+        h( Tonics, {
+          label: "Change octave:", tonics: [pc].concat(OCTS.map(function (o) { return pc + o; })), route: function (t) { return ["note", t]; } })
       ),
+      h( Install, { packageName: "tonal-note" }),
+      h( Code, { lines: ["import note from \"tonal-note\""] }),
+      h( 'p', null, "Or using tonal facade:" ),
+      h( Code, { lines: ['import tonal from "tonal"', 'tonal.note.midi("C4");'] }),
+      h( 'h3', null, "API" ),
       h( 'p', null,
-        h( Link, { to: ["note", pc] }, pc), " | ", h( Link, { to: ["scales", tonic] }, "scales"), " | ", h( Link, { to: ["chords", tonic] }, "chords")
+        Object.keys(tonal.note)
+          .sort()
+          .map(function (n) { return (
+            h( 'a', { class: "api", href: apiUrl(n), target: "_blank" },
+              n
+            )
+          ); })
       ),
+      h( 'h3', null, "Properties" ),
+      h( Code, {
+        lines: [
+          ("note.split(" + (toName(tonic)) + ") // => " + (toJson(note.split(tonic)))),
+          ("note.parse(" + (toName(tonic)) + ") // => " + (toJson(note.parse(tonic)))),
+          ("note.step(" + (toName(tonic)) + ") //=> " + (toStr(note.step(tonic)))),
+          ("note.alt(" + (toName(tonic)) + ") //=> " + (toStr(note.alt(tonic)))),
+          ("note.oct(" + (toName(tonic)) + ") //=> " + (toStr(note.oct(tonic)))),
+          ("note.chroma(" + (toName(tonic)) + ") //=> " + (toStr(note.chroma(tonic))))
+        ] }),
+      h( 'h3', null, "Midi and frequency" ),
+      h( Code, {
+        lines: [
+          ("note.freq(\"" + tonic + "\") => " + (toStr(freq))),
+          ("note.fromFreq(" + (toFixed(2, freq)) + ") => " + tonic),
+          ("note.midi(\"" + tonic + "\") => " + midi),
+          ("note.fromMidi(" + midi + ") => " + tonic)
+        ] }),
       h( 'h3', null, "Octaves" ),
       h( 'pre', null,
         h( 'code', null, "note.inOct(4, \"", tonic, "\") // => ", toStr(note.inOct(4, tonic))
         )
       ),
-      h( Table, { pc: note.pc(tonic) })
+      pc && h( Table, { pc: note.pc(tonic) })
     )
   );
 };
@@ -4855,60 +4919,70 @@ function Table(ref) {
   );
 }
 
-var routeTo = function () {
-    var paths = [], len = arguments.length;
-    while ( len-- ) paths[ len ] = arguments[ len ];
-
-    return "#/" + paths.map(function (n) { return n.replace(/ /g, "_"); }).join("/");
-};
-
-var npmUrl = function (name) { return ("https://www.npmjs.com/package/" + name + "/"); };
-
-var nodeiCo = function (name) { return ("https://nodei.co/npm/" + name + ".png?mini=true"); };
-
-var Install = function (ref) {
-  var name = ref.name;
+var PitchSetNames = function (ref) {
+  var tonic = ref.tonic;
+  var names = ref.names;
+  var title = ref.title;
+  var type = ref.type;
   var packageName = ref.packageName;
 
+  console.log("joder", names);
   return (
-  h( 'a', { href: npmUrl(packageName || "tonal-" + name) },
-    h( 'img', { src: nodeiCo(packageName || "tonal-" + name) })
-  )
-);
+    h( 'div', { class: "{title}" },
+      h( 'h1', null, title ),
+      h( Install, { packageName: packageName }),
+      h( Code, { lines: [("import " + type + " from \"" + packageName + "\"")] }),
+      h( 'p', null, "Or using tonal facade:" ),
+      h( Code, { lines: ['import tonal from "tonal"'] }),
+
+      h( 'h3', null, "Names" ),
+      h( Code, {
+        lines: [
+          ("tonal." + type + ".names(); // => [\"" + (names[0]) + "\", \"" + (names[1]) + "\", ...]")
+        ] }),
+
+      h( 'table', null,
+        h( 'thead', null,
+          h( 'tr', null,
+            h( 'td', null, title, " name" )
+          )
+        ),
+        h( 'tbody', null,
+          names.map(function (name) { return (
+            h( 'tr', null,
+              h( 'td', null,
+                h( Link, { to: [type, name, tonic] }, name)
+              )
+            )
+          ); })
+        )
+      )
+    )
+  );
 };
 
 var Scales = function (ref) {
   var tonic = ref.tonic;
-  var names = ref.names; if ( names === void 0 ) names = tonal.scale.names();
 
   return (
-  h( 'div', { class: "Scales" },
-    h( 'h1', null, "Scales" ),
-    h( Install, { packageName: "tonal-scale" }),
-    h( 'pre', null,
-      h( 'code', null, "import scale from \"tonal-scale\";" )
-    ),
-    h( 'h3', null, "Names" ),
-    h( 'pre', null,
-      h( 'code', null, "import tonal from \"tonal\";" ),
-      h( 'code', null, "tonal.scale.names(); // => [\"", names[0], "\", \"", names[1], "\", ...]" )
-    ),
-    h( 'table', null,
-      h( 'tbody', null,
-        names.map(function (name) { return (
-          h( 'tr', null,
-            h( 'td', null,
-              h( 'a', { href: routeTo("scale", name, tonic) }, name)
-            )
-          )
-        ); })
-      )
-    )
-  )
+  h( PitchSetNames, {
+    title: "Scales", type: "scale", packageName: "tonal-scale", tonic: tonic, names: tonal.scale.names() })
+);
+};
+
+var Chords = function (ref) {
+  var tonic = ref.tonic;
+
+  return (
+  h( PitchSetNames, {
+    title: "Chords", type: "chord", packageName: "tonal-chord", tonic: tonic, names: tonal.chord.names() })
 );
 };
 
 var toArray = function (arr) { return "[" + arr.map(function (t) { return ("\"" + t + "\""); }).join(", ") + "]"; };
+var fullName = function (tonic, name) { return (tonic ? tonic + " " + name : name); };
+
+var scale$3 = tonal.scale;
 
 var Scale = function (ref) {
   var tonic = ref.tonic;
@@ -4925,31 +4999,15 @@ var Scale = function (ref) {
     ),
 
     h( 'h3', null, "Scale notes" ),
-    h( 'pre', null,
-      h( 'code', null, "tonal.scale.notes(\"", tonic + " " + name, "\"); // => ", toArray(tonal.scale.get(name, tonic))
-      )
-    )
-  )
-);
-};
-
-var Chords = function (ref) {
-  var tonic = ref.tonic;
-
-  return (
-  h( 'div', { class: "Chords" },
-    h( 'h1', null, tonic, " chords" ),
-    h( 'table', null,
-      h( 'tbody', null,
-        tonal.chord.names().map(function (name) { return (
-          h( 'tr', null,
-            h( 'td', null,
-              h( Link, { to: ["chord", name, tonic] }, tonic + name)
-            )
-          )
-        ); })
-      )
-    )
+    h( Code, {
+      lines: [
+        ("tonal.scale.notes(\"" + (fullName(tonic, name)) + "\"); // => " + (toArray(
+          scale$3.notes(name, tonic)
+        ))),
+        ("tonal.scale.intervals(\"" + (fullName(tonic, name)) + "\"); // => " + (toArray(
+          scale$3.intervals(name, tonic)
+        )))
+      ] })
   )
 );
 };
@@ -4969,26 +5027,33 @@ var Tonal = function (ref) { return (
   h( 'div', { class: "Welcome" },
     h( 'h1', null, "tonal" ),
     h( Install, { packageName: "tonal" }),
-    h( 'pre', null,
-      h( 'code', null, "import tonal from \"tonal\"; " ),
-      h( 'code', null, "tonal.note.freq(\"A4\") // => 440" ),
-      h( 'code', null, "tonal.note.midi(\"A4\") // => 69" )
-    ),
+    h( Code, {
+      lines: [
+        'import tonal from "tonal";',
+        'tonal.note.freq("A4") // => 440',
+        'tonal.note.midi("A4") // => 69'
+      ] }),
+    h( 'pre', null ),
     h( 'h3', null,
       h( Link, { to: ["notes"] }, "Notes")
     ),
     h( Tonics, { route: function (t) { return ["note", t]; } }),
-    h( 'pre', null,
-      h( 'code', null, "tonal.note.freq(\"A4\") // => 440" ),
-      h( 'code', null, "tonal.note.midi(\"A4\") // => 69" )
-    ),
+    h( Code, {
+      lines: [
+        'tonal.note.freq("A4") // => 440',
+        'tonal.note.midi("A4") // => 69'
+      ] }),
     h( 'h3', null,
       h( Link, { to: ["intervals"] }, "Intervals")
     )
   )
 ); };
 
-var encode = function (paths) { return "#/" + paths.map(function (n) { return n.replace(/ /g, "_"); }).join("/"); };
+var encode = function (paths) { return "#/" +
+  paths
+    .filter(function (n) { return typeof n === "string"; })
+    .map(function (n) { return n.replace(/ /g, "_"); })
+    .join("/"); };
 
 var decode = function (route) { return route.split("/").map(function (n) { return n.replace(/_/g, " "); }); };
 
@@ -5003,6 +5068,7 @@ var Router = function (ref) {
 
   switch (route[0]) {
     case "note":
+    case "notes":
       return h( Note, { tonic: route[1] });
     case "scales":
       return h( Scales, { tonic: route[1] });
@@ -5016,8 +5082,6 @@ var Router = function (ref) {
       return h( Tonal, null );
   }
 };
-
-console.log("Tonal", tonal);
 
 app({
   state: {
