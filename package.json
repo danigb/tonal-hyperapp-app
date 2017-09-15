@@ -5,6 +5,7 @@
   "description": "Tonal Application",
   "main": "index.js",
   "dependencies": {
+    "classnames": "^2.2.5",
     "gh-pages": "^1.0.0",
     "hyperapp": "*",
     "rollup-plugin-json": "^2.3.0"

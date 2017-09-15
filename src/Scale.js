@@ -1,26 +1,58 @@
 import { h } from "hyperapp";
 import tonal from "tonal";
+import API from "./API";
 import Tonics from "./Tonics";
+import PitchSetList from "./PitchSetList";
+import Code from "./Code";
+import Score from "./Score";
+import CircleSet from "./CircleSet";
 import { Link } from "./Router";
 
 const toArray = arr => "[" + arr.map(t => `"${t}"`).join(", ") + "]";
+const fullName = (tonic, name) => (tonic ? tonic + " " + name : name);
 
-export default ({ tonic, name }) => (
-  <div class="Scale">
-    <h4>scale</h4>
-    <h1>
-      {tonic} {name}
-    </h1>
-    <p>
-      <Tonics route={t => ["scale", name, t]} />
-    </p>
+const scale = tonal.scale;
 
-    <h3>Scale notes</h3>
-    <pre>
-      <code>
-        tonal.scale.notes("{tonic + " " + name}"); // =>
-        {toArray(tonal.scale.get(name, tonic))}
-      </code>
-    </pre>
-  </div>
-);
+export default ({ tonic, name }) => {
+  const intervals = tonal.scale.intervals(name);
+  const notes = tonal.scale.notes(name, tonic);
+  const offset = tonal.note.chroma(tonic) || 0;
+  const modes = tonal.scale.modes(name, tonic);
+
+  return (
+    <div class="Scale">
+      <h4>scale</h4>
+      <h1>
+        {tonic} {name}
+      </h1>
+      <p>
+        <Tonics route={t => ["scale", name, t]} />
+      </p>
+
+      <CircleSet
+        size={160}
+        offset={offset}
+        chroma={tonal.pcset.chroma(intervals)}
+      />
+
+      <Score notes={notes} />
+
+      {modes.length && [
+        <h2>Scale modes</h2>,
+        <PitchSetList type="scale" names={modes} />
+      ]}
+
+      <API module="scale" />
+
+      <Code
+        lines={[
+          `tonal.scale.exists("${name}"); // => ${scale.exists(name)}`,
+          `tonal.scale.intervals("${name}"); // => ${toArray(intervals)}`,
+          `tonal.scale.notes("${fullName(tonic, name)}"); // => ${toArray(
+            scale.notes(name, tonic)
+          )}`
+        ]}
+      />
+    </div>
+  );
+};

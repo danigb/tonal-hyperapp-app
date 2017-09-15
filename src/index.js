@@ -1,9 +1,6 @@
 import { h, app } from "hyperapp";
 import Router, { Link, decode } from "./Router";
 
-import tonal from "tonal";
-console.log("Tonal", tonal);
-
 app({
   state: {
     route: []
