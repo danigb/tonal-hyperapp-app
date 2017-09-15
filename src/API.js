@@ -7,7 +7,7 @@ const apiUrl = (modName, fnName) =>
   BASE_URL + "note#module_" + modName + "." + fnName;
 
 export default ({ module }) => [
-  <h3>API</h3>,
+  <h2>API</h2>,
   <Install packageName={"tonal-" + module} />,
   <p>
     {Object.keys(tonal[module])

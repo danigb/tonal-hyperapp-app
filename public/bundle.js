@@ -5023,7 +5023,7 @@ var API = function (ref) {
   var module = ref.module;
 
   return [
-  h( 'h3', null, "API" ),
+  h( 'h2', null, "API" ),
   h( Install, { packageName: "tonal-" + module }),
   h( 'p', null,
     Object.keys(tonal[module])
@@ -5037,6 +5037,55 @@ var API = function (ref) {
 ];
 };
 
+/* global Vex */
+var ref = Vex.Flow;
+var Renderer = ref.Renderer;
+var Formatter = ref.Formatter;
+var W = 700;
+var H = 120;
+
+var draw = function (notes) { return function (canvas) {
+  console.log("draw canvas", notes);
+  console.log("notes", notes);
+  var renderer = new Renderer(canvas, Renderer.Backends.CANVAS);
+  var ctx = renderer.getContext();
+  ctx.clearRect(0, 0, W, H);
+  var stave = new Vex.Flow.Stave(0, 0, W - 5);
+  stave
+    .addClef("treble")
+    .setContext(ctx)
+    .draw();
+
+  var oct = 4;
+  Formatter.FormatAndDraw(
+    ctx,
+    stave,
+    notes.map(function(n) {
+      var letter = n.charAt(0);
+      var alt = n.slice(1);
+      if (tonal.note.chroma(n) === 0) { oct++; }
+      var note = new Vex.Flow.StaveNote({
+        keys: [letter + "/" + oct],
+        duration: "q"
+      });
+      console.log(letter, alt, oct);
+      if (alt) { note.addAccidental(0, new Vex.Flow.Accidental(alt)); }
+      return note;
+    })
+  );
+}; };
+
+var Score = function (ref) {
+  var notes = ref.notes;
+  return (
+    h( 'div', { className: "Score" },
+      h( 'canvas', {
+        width: W, height: H, oncreate: draw(notes), onupdate: draw(notes) }),
+      h( 'div', { className: "controls" })
+    )
+  );
+};
+
 var toArray = function (arr) { return "[" + arr.map(function (t) { return ("\"" + t + "\""); }).join(", ") + "]"; };
 var fullName = function (tonic, name) { return (tonic ? tonic + " " + name : name); };
 
@@ -5047,6 +5096,7 @@ var Scale = function (ref) {
   var name = ref.name;
 
   var intervals = tonal.scale.intervals(name);
+  var notes = tonal.scale.notes(name, tonic);
   var offset = tonal.note.chroma(tonic) || 0;
   return (
     h( 'div', { class: "Scale" },
@@ -5061,15 +5111,17 @@ var Scale = function (ref) {
       h( CircleSet, {
         size: 160, offset: offset, chroma: tonal.pcset.chroma(intervals) }),
 
+      h( Score, { notes: notes }),
+
       h( API, { module: "scale" }),
 
       h( Code, {
         lines: [
           ("tonal.scale.exists(\"" + name + "\"); // => " + (scale$3.exists(name))),
+          ("tonal.scale.intervals(\"" + name + "\"); // => " + (toArray(intervals))),
           ("tonal.scale.notes(\"" + (fullName(tonic, name)) + "\"); // => " + (toArray(
             scale$3.notes(name, tonic)
-          ))),
-          ("tonal.scale.intervals(\"" + name + "\"); // => " + (toArray(intervals)))
+          )))
         ] })
     )
   );
