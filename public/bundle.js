@@ -313,19 +313,6 @@ function app(props) {
   }
 }
 
-var Note = function (ref) {
-  var tonic = ref.tonic;
-
-  return (
-  h( 'div', { class: "Note" },
-    h( 'h1', null, tonic ),
-    h( Link, { to: ["scales", tonic] }, tonic, " scales"),
-    h( 'br', null ),
-    h( Link, { to: ["chords", tonic] }, tonic, " chords")
-  )
-);
-};
-
 'use strict';
 
 // util
@@ -4771,6 +4758,38 @@ assign(tonal.chord, chord$1);
 
 if (typeof window !== "undefined") { window.Tonal = tonal; }
 
+var OCTS = [1, 2, 3, 4, 5, 6];
+
+var Note = function (ref) {
+  var tonic = ref.tonic;
+
+  return (
+  h( 'div', { class: "Note" },
+    h( 'h4', null, "note" ),
+    h( 'h1', null, tonic ),
+    h( Link, { to: ["scales", tonic] }, tonic, " scales"), " | ", h( Link, { to: ["chords", tonic] }, tonic, " chords"),
+    h( 'table', null,
+      h( 'thead', null,
+        h( 'tr', null,
+          h( 'td', null, "Note" ),
+          h( 'td', null, "Midi" ),
+          h( 'td', null, "Frecuency" )
+        )
+      ),
+      h( 'tbody', null,
+        OCTS.map(function (o) { return (
+          h( 'tr', null,
+            h( 'td', null, tonic + o ),
+            h( 'td', null, tonal.note.midi(tonic + o) ),
+            h( 'td', null, tonal.note.freq(tonic + o).toFixed(3) )
+          )
+        ); })
+      )
+    )
+  )
+);
+};
+
 var routeTo = function () {
     var paths = [], len = arguments.length;
     while ( len-- ) paths[ len ] = arguments[ len ];
@@ -4778,15 +4797,42 @@ var routeTo = function () {
     return "#/" + paths.map(function (n) { return n.replace(/ /g, "_"); }).join("/");
 };
 
+var TONICS = "C C# Db D D# Eb E F F# Gb G G# Ab A A# Bb B B# Cb".split(" ");
+
+var Tonics = function (ref) {
+  var id = ref.id;
+  var route = ref.route;
+
+  return (
+  h( 'span', { id: id, class: "Tonics" },
+    TONICS.map(function (t) { return h( Link, { to: route(t) }, t); })
+  )
+);
+};
+
+var Breadcrumbs = function (ref, children) { return (
+  h( 'div', { class: "Breadcrumbs" },
+    h( Link, { to: [] }, "tonal"), " > ", children
+  )
+); };
+
 var Scales = function (ref) {
   var tonic = ref.tonic;
+  var names = ref.names; if ( names === void 0 ) names = tonal.scale.names();
 
   return (
   h( 'div', { class: "Scales" },
+    h( Tonics, { route: function (t) { return ["scales", t]; } }),
+    h( Breadcrumbs, null,
+      h( Link, { to: ["note", tonic] }, tonic), " > ", tonic, " scales" ),
     h( 'h1', null, tonic, " scales" ),
+    h( 'pre', null,
+      h( 'code', null, "import tonal from \"tonal\";" ),
+      h( 'code', null, "tonal.scale.names(); // => [\"", names[0], "\", \"", names[1], "\", ...]" )
+    ),
     h( 'table', null,
       h( 'tbody', null,
-        tonal.scale.names().map(function (name) { return (
+        names.map(function (name) { return (
           h( 'tr', null,
             h( 'td', null,
               h( 'a', { href: routeTo("scale", name, tonic) },
@@ -4801,15 +4847,7 @@ var Scales = function (ref) {
 );
 };
 
-var TONICS = "C C# Db D D# Eb E F F# Gb G G# Ab A A# Bb B B# Cb".split(" ");
-
-var Tonics = function (ref) {
-  var route = ref.route;
-
-  return (
-  h( 'span', { class: "Tonics" }, TONICS.map(function (t) { return h( Link, { to: route(t) }, t); }))
-);
-};
+var toArray = function (arr) { return "[" + arr.map(function (t) { return ("\"" + t + "\""); }).join(", ") + "]"; };
 
 var Scale = function (ref) {
   var tonic = ref.tonic;
@@ -4817,12 +4855,18 @@ var Scale = function (ref) {
 
   return (
   h( 'div', { class: "Scale" },
+    h( Tonics, { route: function (t) { return ["scale", name, t]; } }),
+    h( Breadcrumbs, null ),
+    h( 'h4', null, "scale" ),
     h( 'h1', null,
       tonic, " ", name
-    ), "Change tonic: ", h( Tonics, { route: function (t) { return ["scale", name, t]; } }),
+    ),
     h( 'div', { class: "properties" },
-      h( 'label', null, "Notes:" ),
-      tonal.scale.get(name, tonic).join(" "),
+      h( 'label', null, "Scale notes:" ),
+      h( 'pre', null,
+        h( 'code', null, "tonal.scale.notes(\"", tonic + " " + name, "\"); // => ", toArray(tonal.scale.get(name, tonic))
+        )
+      ),
       h( 'br', null )
     )
   )
@@ -4861,6 +4905,25 @@ var Chord = function (ref) {
 );
 };
 
+var Welcome = function (ref) { return (
+  h( 'div', { class: "Welcome" },
+    h( 'h1', null, "tonal" ),
+    h( Tonics, { route: function (t) { return ["note", t]; } }),
+    h( 'pre', null,
+      h( 'code', null, "import tonal from \"tonal\"; " ),
+      h( 'code', null, "tonal.note.freq(\"A4\") // => 440" ),
+      h( 'code', null, "tonal.note.midi(\"A4\") // => 69" )
+    ),
+    h( 'h3', null,
+      h( Link, { to: ["notes"] }, "Notes")
+    ),
+    h( 'pre', null,
+      h( 'code', null, "tonal.note.freq(\"A4\") // => 440" ),
+      h( 'code', null, "tonal.note.midi(\"A4\") // => 69" )
+    )
+  )
+); };
+
 var encode = function (paths) { return "#/" + paths.map(function (n) { return n.replace(/ /g, "_"); }).join("/"); };
 
 var decode = function (route) { return route.split("/").map(function (n) { return n.replace(/_/g, " "); }); };
@@ -4886,25 +4949,15 @@ var Router = function (ref) {
     case "chord":
       return h( Chord, { name: route[1], tonic: route[2] });
     default:
-      return h( 'p', null, "Welcome." );
+      return h( Welcome, null );
   }
 };
-
-var tonics = "C D E F G A B".split(" ");
 
 app({
   state: {
     route: []
   },
-  view: function (state) { return (
-    h( 'div', null,
-      h( 'div', { class: "tonics" },
-        tonics.map(function (t) { return h( 'a', { href: "#/note/" + t }, t); })
-      ),
-      h( 'h4', null, "tonal" ),
-      h( Router, { route: state.route })
-    )
-  ); },
+  view: function (state) { return h( Router, { route: state.route }); },
   actions: {
     route: function (state, actions, data) {
       return { route: decode(data) };
